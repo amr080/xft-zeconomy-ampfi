@@ -1,0 +1,27 @@
+echo '#!/bin/bash
+
+WGET_CMD="wget -r -l 20 -w 0.5 --limit-rate=500k -c --random-wait -k -E -p -e robots=off"
+
+URLS=(
+   "https://app.ampfi.digital/dashboard"
+   "https://app.ampfi.digital/tokens/portfolio" 
+   "https://app.ampfi.digital/tokens/treasury"
+   "https://app.ampfi.digital/tokens/program"
+   "https://app.ampfi.digital/tokens/exchange"
+   "https://app.ampfi.digital/tokens/sign"
+   "https://app.ampfi.digital/tokens/approve" 
+   "https://app.ampfi.digital/blockchain_accounts"
+   "https://app.ampfi.digital/profile/company"
+   "https://app.ampfi.digital/profile/personal"
+)
+
+mkdir -p ampfi_output
+
+for url in "${URLS[@]}"; do
+   echo "Scraping: $url"
+   $WGET_CMD $url 2>&1 | tee -a ampfi_output/wget_log.txt
+   echo "----------------------------------------"
+done
+
+echo "Scraping complete. Results saved to ampfi_output/"
+ls -l ampfi_output/' > scrape_ampfi.sh && chmod +x scrape_ampfi.sh && ./scrape_ampfi.sh
