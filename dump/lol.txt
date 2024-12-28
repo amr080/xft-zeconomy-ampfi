@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# Configuration for wget
+WGET_CMD="wget -r -l 100 --no-check-certificate --tries=10 --retry-connrefused \
+--waitretry=1 --timeout=30 --random-wait -w 0.1 --limit-rate=2m \
+-k -E -p -e robots=off --header='Accept: text/html' \
+--user-agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' \
+--keep-session-cookies --save-cookies cookies.txt --load-cookies cookies.txt"
+
+# Base URL
+BASE="https://app.ampfi.digital"
+
+# All endpoints from manifest
+URLS=(
+    "$BASE/dashboard"
+    "$BASE/blockchain_accounts"
+    "$BASE/credit_account"
+    "$BASE/orders/buy_orders"
+    "$BASE/orders/buyback_orders" 
+    "$BASE/orders/roll_orders"
+    "$BASE/profile/company"
+    "$BASE/profile/company/admin"
+    "$BASE/profile/personal"
+    "$BASE/tokens/portfolio"
+    "$BASE/tokens/treasury"
+    "$BASE/tokens/program"
+    "$BASE/tokens/exchange"
+    "$BASE/tokens/approve"
+    "$BASE/tokens/sign"
+    "$BASE/tokens/authorize"
+    "$BASE/tokens/issue"
+    "$BASE/tokens/create_issue"
+    "$BASE/tokens/request_investment"
+    "$BASE/tokens/settlement/outstanding_dcp"
+    "$BASE/tokens/settlement/paid_dcp"
+    "$BASE/transactions/statements"
+    "$BASE/vouchers/manage_vouchers"
+    "$BASE/vouchers/voucher_board"
+)
+
+# Create necessary directories
+mkdir -p ampfi_output/{data,logs}
+
+# Maximum number of parallel jobs
+MAX_JOBS=4
+
+# Function to fetch a single URL
+fetch_url() {
+    local url="$1"
+    echo "[$(date)] Starting: $url" | tee -a ampfi_output/logs/scrape.log
+    $WGET_CMD "$url" >> ampfi_output/logs/wget.log 2>&1
+    echo "[$(date)] Completed: $url" | tee -a ampfi_output/logs/scrape.log
+}
+
+export WGET_CMD
+export BASE
+
+# Export the function so it's available to subshells
+export -f fetch_url
+
+# Use a semaphore to limit the number of concurrent jobs
+# Install 'parallel' if not available, or use a simple job control
+# Here, we'll use a simple job control with background jobs
+
+current_jobs=0
+
+for url in "${URLS[@]}"; do
+    fetch_url "$url" &
+    current_jobs=$((current_jobs + 1))
+    
+    # If the number of current jobs reaches MAX_JOBS, wait for any to finish
+    if [[ "$current_jobs" -ge "$MAX_JOBS" ]]; then
+        wait -n  # Wait for at least one job to finish
+        current_jobs=$((current_jobs - 1))
+    fi
+done
+
+# Wait for all remaining background jobs to finish
+wait
+
+# Fetch static assets
+echo "[$(date)] Starting: $BASE/static/" | tee -a ampfi_output/logs/scrape.log
+$WGET_CMD "$BASE/static/" >> ampfi_output/logs/static.log 2>&1
+echo "[$(date)] Completed: $BASE/static/" | tee -a ampfi_output/logs/scrape.log
+
+echo "Scrape complete. Checking results..."
+find ampfi_output/data -type f -name "*.html" | wc -l
