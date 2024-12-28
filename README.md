@@ -1,10 +1,10 @@
-https://api.ampfi.digital/token_buyback/issuer_orders
+## BASE URLS
+https://www.zeconomy.com/<br>
+https://public.zeconomy.com<br>
+https://app.ampfi.digital/<br>
+https://api.ampfi.digital/<br>
 
-
-/issuance/portfolio
-https://api.ampfi.digital/companies/cp_program_signers?limit=1000
-
-
+## QUICKNODE
 ETH_MAINNET:<br>
 powerful-holy-bush.quiknode.pro<br>
 3240624a343867035925ff7561eb60dfdba2a668<br>
